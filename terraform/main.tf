@@ -65,8 +65,8 @@ resource "aws_iam_role_policy_attachment" "ecs_execution_policy" {
 }
 
 # Security Group
-resource "aws_security_group" "ecs_sg" {
-  name        = "${var.project_name}-sg"
+resource "aws_security_group" "alb_sg" {
+  name        = "${var.project_name}-alb-sg"
   description = "Allow inbound HTTP traffic"
   vpc_id      = module.vpc.vpc_id
 
@@ -76,6 +76,43 @@ resource "aws_security_group" "ecs_sg" {
     to_port     = var.container_port
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "ecs_sg2" {
+  name        = "${var.project_name}-ecs-sg"
+  description = "Allow traffic from ALB"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress {
+    description      = "Allow ALB to reach frontend (port 80)"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    security_groups  = [aws_security_group.alb_sg.id]
+  }
+
+  ingress {
+    description      = "Allow ALB to reach user-service (3001)"
+    from_port        = 3001
+    to_port          = 3001
+    protocol         = "tcp"
+    security_groups  = [aws_security_group.alb_sg.id]
+  }
+
+  ingress {
+    description      = "Allow ALB to reach item-service (3002)"
+    from_port        = 3002
+    to_port          = 3002
+    protocol         = "tcp"
+    security_groups  = [aws_security_group.alb_sg.id]
   }
 
   egress {
@@ -130,7 +167,7 @@ resource "aws_ecs_service" "frontend" {
   network_configuration {
     subnets         = module.vpc.public_subnets
     assign_public_ip = true
-    security_groups  = [aws_security_group.ecs_sg.id]
+    security_groups  = [aws_security_group.ecs_sg2.id]
   }
 
   load_balancer {
@@ -184,7 +221,7 @@ resource "aws_ecs_service" "user_service" {
   network_configuration {
     subnets         = module.vpc.public_subnets
     assign_public_ip = true
-    security_groups  = [aws_security_group.ecs_sg.id]
+    security_groups  = [aws_security_group.ecs_sg2.id]
   }
 
   load_balancer {
@@ -237,7 +274,7 @@ resource "aws_ecs_service" "item_service" {
   network_configuration {
     subnets         = module.vpc.public_subnets
     assign_public_ip = true
-    security_groups  = [aws_security_group.ecs_sg.id]
+    security_groups  = [aws_security_group.ecs_sg2.id]
   }
 
   load_balancer {
@@ -268,7 +305,7 @@ resource "aws_lb" "app_alb" {
   name               = "${var.project_name}-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.ecs_sg.id]
+  security_groups    = [aws_security_group.alb_sg.id]
   subnets            = module.vpc.public_subnets
 
   enable_deletion_protection = false
