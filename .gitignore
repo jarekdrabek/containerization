@@ -1,0 +1,8 @@
+.idea
+/terraform/.terraform
+containerization_venv
+user-service/node_modules
+frontend/node_modules
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup

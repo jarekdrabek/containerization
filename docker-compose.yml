@@ -1,0 +1,22 @@
+version: '3'
+services:
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    ports:
+      - "3001:3001"
+    platform: linux/amd64
+
+  item-service:
+    build: ./item-service
+    container_name: item-service
+    ports:
+      - "3002:3002"
+    platform: linux/amd64
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:80"
+    platform: linux/amd64
